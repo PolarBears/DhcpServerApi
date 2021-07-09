@@ -7,6 +7,12 @@ namespace Dhcp
 {
     public class DhcpServerScope : IDhcpServerScope
     {
+        private SubnetInfo info = null;
+        private DhcpServerIpRange? ipRange = null;
+        private DhcpServerDnsSettings dnsSettings = null;
+        private bool failoverRelationshipFetched = false;
+        private DhcpServerFailoverRelationship failoverRelationship = null;
+
         /// <summary>
         /// Default time delay offer of 0 milliseconds
         /// </summary>
@@ -16,13 +22,12 @@ namespace Dhcp
         /// </summary>
         public static TimeSpan DefaultLeaseDuration => TimeSpan.FromDays(8);
 
-
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerScope.Server => Server;
         public DhcpServerIpAddress Address { get; }
 
-        private SubnetInfo info = null;
         private SubnetInfo Info => info ??= GetInfo(Server, Address);
+
         public DhcpServerIpMask Mask => Info.Mask;
         public string Name
         {
@@ -35,10 +40,10 @@ namespace Dhcp
             set => SetComment(value);
         }
         public DhcpServerScopeState State => Info.State;
-        private DhcpServerIpRange? ipRange = null;
+        
         public DhcpServerIpRange IpRange
         {
-            get => (ipRange ??= GetIpRange()).Value;
+            get => ipRange ??= GetIpRange();
             set => SetIpRange(value);
         }
 
@@ -54,9 +59,23 @@ namespace Dhcp
         }
 
         public IDhcpServerHost PrimaryHost => Info.PrimaryHost;
-        private DhcpServerDnsSettings dnsSettings = null;
-        public IDhcpServerDnsSettings DnsSettings => dnsSettings ??= DhcpServerDnsSettings.GetScopeDnsSettings(this);
+        public IDhcpServerDnsSettings DnsSettings => (dnsSettings ??= DhcpServerDnsSettings.GetScopeDnsSettings(this)).Clone();
         public bool QuarantineOn => Info.QuarantineOn;
+
+        public IDhcpServerFailoverRelationship FailoverRelationship
+        {
+            get
+            {
+                if (!failoverRelationshipFetched)
+                {
+                    failoverRelationship = DhcpServerFailoverRelationship.GetFailoverRelationship(Server, Address);
+                    failoverRelationshipFetched = true;
+                }
+                return failoverRelationship;
+            }
+        }
+        public IDhcpServerScopeFailoverStatistics FailoverStatistics
+            => DhcpServerScopeFailoverStatistics.GetScopeFailoverStatistics(Server, this);
 
         /// <summary>
         /// Scope Excluded IP Ranges
@@ -89,6 +108,13 @@ namespace Dhcp
             Clients = new DhcpServerScopeClientCollection(this);
         }
 
+        private DhcpServerScope(DhcpServer server, DhcpServerIpAddress address, DhcpServerFailoverRelationship failoverRelationship)
+            : this(server, address)
+        {
+            this.failoverRelationship = failoverRelationship;
+            failoverRelationshipFetched = true;
+        }
+
         private DhcpServerScope(DhcpServer server, DhcpServerIpAddress address, SubnetInfo info)
             : this(server, address)
         {
@@ -113,6 +139,20 @@ namespace Dhcp
             }
         }
 
+        public IDhcpServerDnsSettings ConfigureDnsSettings(IDhcpServerDnsSettings dnsSettings)
+        {
+            if (dnsSettings == null)
+            {
+                // remove DNS settings at this level (scope - returns to global)
+                DhcpServerDnsSettings.RemoveScopeDnsSettings(this);
+                return (this.dnsSettings = (DhcpServerDnsSettings)Server.DnsSettings).Clone();
+            }
+            else
+            {
+                return (this.dnsSettings = DhcpServerDnsSettings.SetScopeDnsSettings(this, (DhcpServerDnsSettings)dnsSettings)).Clone();
+            }
+        }
+
         /// <summary>
         /// Deletes this scope from the server
         /// </summary>
@@ -125,18 +165,12 @@ namespace Dhcp
                                               SubnetAddress: Address.ToNativeAsNetwork(),
                                               ForceFlag: flag);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpDeleteSubnet), result);
         }
 
-        public IDhcpServerFailoverRelationship GetFailoverRelationship()
-            => DhcpServerFailoverRelationship.GetFailoverRelationship(Server, Address);
-
-        public IDhcpServerScopeFailoverStatistics GetFailoverStatistics()
-            => DhcpServerScopeFailoverStatistics.GetScopeFailoverStatistics(Server, this);
-
         public void ReplicateFailoverPartner()
-            => DhcpServerFailoverRelationship.ReplicateScopeRelationship((DhcpServerFailoverRelationship)GetFailoverRelationship(), this);
+            => DhcpServerFailoverRelationship.ReplicateScopeRelationship((DhcpServerFailoverRelationship)FailoverRelationship, this);
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -146,7 +180,11 @@ namespace Dhcp
         /// <param name="mode">Failover mode to configure</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string sharedSecret, DhcpServerFailoverMode mode)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -157,7 +195,12 @@ namespace Dhcp
         /// <param name="mode">Failover mode to configure</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string name, string sharedSecret, DhcpServerFailoverMode mode)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
+
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -168,7 +211,11 @@ namespace Dhcp
         /// <param name="modePercentage">Percentage argument for the failover mode</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string sharedSecret, DhcpServerFailoverMode mode, byte modePercentage)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode, modePercentage);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode, modePercentage);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -180,7 +227,11 @@ namespace Dhcp
         /// <param name="modePercentage">Percentage argument for the failover mode</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string name, string sharedSecret, DhcpServerFailoverMode mode, byte modePercentage)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode, modePercentage);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode, modePercentage);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -194,7 +245,11 @@ namespace Dhcp
         /// <param name="stateSwitchInterval">State switch interval or null to disable</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string sharedSecret, DhcpServerFailoverMode mode, byte modePercentage, TimeSpan maximumClientLeadTime, TimeSpan? stateSwitchInterval)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode, modePercentage, maximumClientLeadTime, stateSwitchInterval);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name: null, sharedSecret, mode, modePercentage, maximumClientLeadTime, stateSwitchInterval);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
 
         /// <summary>
         /// Configures a failover relationship for this scope
@@ -208,7 +263,11 @@ namespace Dhcp
         /// <param name="stateSwitchInterval">State switch interval or null to disable</param>
         /// <returns>The created failover relationship</returns>
         public IDhcpServerFailoverRelationship ConfigureFailover(IDhcpServer partnerServer, string name, string sharedSecret, DhcpServerFailoverMode mode, byte modePercentage, TimeSpan maximumClientLeadTime, TimeSpan? stateSwitchInterval)
-            => DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode, modePercentage, maximumClientLeadTime, stateSwitchInterval);
+        {
+            failoverRelationship = DhcpServerFailoverRelationship.CreateFailoverRelationship(this, (DhcpServer)partnerServer, name, sharedSecret, mode, modePercentage, maximumClientLeadTime, stateSwitchInterval);
+            failoverRelationshipFetched = true;
+            return failoverRelationship;
+        }
 
         /// <summary>
         /// Adds this scope to an existing failover relationship
@@ -217,13 +276,19 @@ namespace Dhcp
         public void ConfigureFailover(IDhcpServerFailoverRelationship failoverRelationship)
         {
             DhcpServerFailoverRelationship.AddScopeToFailoverRelationship((DhcpServerFailoverRelationship)failoverRelationship, this);
+            this.failoverRelationship = (DhcpServerFailoverRelationship)failoverRelationship;
+            failoverRelationshipFetched = true;
         }
 
         /// <summary>
         /// Removes the scope from its failover relationship. This will delete the scope from the partner server.
         /// </summary>
         public void DeconfigureFailover()
-            => DhcpServerFailoverRelationship.DeconfigureScopeFailover(this);
+        {
+            DhcpServerFailoverRelationship.DeconfigureScopeFailover(this);
+            failoverRelationship = null;
+            failoverRelationshipFetched = true;
+        }
 
         private void SetName(string name)
         {
@@ -297,8 +362,8 @@ namespace Dhcp
                 destinationScope.ExcludedIpRanges.AddExcludedIpRange(range);
 
             // replicate option values
-            var destOptions = destinationScope.Options.ToDictionary(o => o.OptionId);
-            var srcOptions = Options.ToDictionary(o => o.OptionId);
+            var destOptions = ((DhcpServerScopeOptionValueCollection)destinationScope.Options).GetOptionValues(includeDnsSettingsOption: true).ToDictionary(o => o.OptionId);
+            var srcOptions = ((DhcpServerScopeOptionValueCollection)Options).GetOptionValues(includeDnsSettingsOption: true).ToDictionary(o => o.OptionId);
             // remove option values
             foreach (var optionId in destOptions.Keys.Except(srcOptions.Keys))
                 destinationScope.Options.RemoveOptionValue(optionId);
@@ -336,16 +401,24 @@ namespace Dhcp
             {
                 var srcReservation = srcReservations[address];
                 var destReservation = destinationScope.Reservations.AddReservation(srcReservation.Address, srcReservation.HardwareAddress, srcReservation.AllowedClientTypes);
-                foreach (var optionValue in srcReservation.Options.ToList())
+                foreach (var optionValue in ((DhcpServerScopeReservationOptionValueCollection)srcReservation.Options).GetOptionValues(includeDnsSettingsOption: true).ToList())
                     destReservation.Options.AddOrSetOptionValue(optionValue);
             }
+            // update reservation client info
+            foreach (var srcReservation in srcReservations.Values)
+            {
+                var srcClient = (DhcpServerClient)srcReservation.Client;
+                // write client info to destination server (DhcpSetClientInfo allows for update/add)
+                srcClient.Info.SetInfo(destinationScope.Server);
+            }
+
             // update reservation options
             foreach (var address in srcReservations.Keys.Intersect(destReservations.Keys))
             {
                 var srcRes = srcReservations[address];
-                var srcResOptions = srcRes.Options.ToDictionary(o => o.OptionId);
+                var srcResOptions = ((DhcpServerScopeReservationOptionValueCollection)srcRes.Options).GetOptionValues(includeDnsSettingsOption: true).ToDictionary(o => o.OptionId);
                 var destRes = destReservations[address];
-                var destResOptions = destRes.Options.ToDictionary(o => o.OptionId);
+                var destResOptions = ((DhcpServerScopeReservationOptionValueCollection)destRes.Options).GetOptionValues(includeDnsSettingsOption: true).ToDictionary(o => o.OptionId);
 
                 // remove option values
                 foreach (var optionId in destResOptions.Keys.Except(srcResOptions.Keys))
@@ -409,7 +482,7 @@ namespace Dhcp
                                               SubnetAddress: subnetAddress.ToNativeAsNetwork(),
                                               SubnetInfo: in scopeInfo);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpCreateSubnet), result);
 
             // add ip range
@@ -425,8 +498,17 @@ namespace Dhcp
             return GetScope(server, subnetAddress);
         }
 
-        internal static IEnumerable<DhcpServerScope> GetScopes(DhcpServer server)
+        internal static IEnumerable<DhcpServerScope> GetScopes(DhcpServer server, bool preloadClients, bool preloadFailoverRelationships)
         {
+            var failoverRelationships = default(Dictionary<DhcpServerIpAddress, DhcpServerFailoverRelationship>);
+            if (preloadFailoverRelationships)
+            {
+                failoverRelationships = DhcpServerFailoverRelationship.GetFailoverRelationships(server)
+                        .SelectMany(r => r.ScopeAddresses, (r, a) => new KeyValuePair<DhcpServerIpAddress, DhcpServerFailoverRelationship>(a, r))
+                        .ToDictionary(v => v.Key, v => v.Value);
+            }
+
+            var scopes = new List<DhcpServerScope>();
             var resumeHandle = IntPtr.Zero;
             var result = Api.DhcpEnumSubnets(ServerIpAddress: server.Address,
                                              ResumeHandle: ref resumeHandle,
@@ -435,27 +517,52 @@ namespace Dhcp
                                              ElementsRead: out var elementsRead,
                                              ElementsTotal: out _);
 
-            if (result == DhcpErrors.ERROR_NO_MORE_ITEMS || result == DhcpErrors.EPT_S_NOT_REGISTERED)
-                yield break;
+            if (result == DhcpServerNativeErrors.ERROR_NO_MORE_ITEMS || result == DhcpServerNativeErrors.EPT_S_NOT_REGISTERED)
+                return scopes;
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpEnumSubnets), result);
 
             try
             {
                 if (elementsRead == 0)
-                    yield break;
+                    return scopes;
 
                 using (var enumInfo = enumInfoPtr.MarshalToStructure<DHCP_IP_ARRAY>())
                 {
-                    foreach (var scopeAddress in enumInfo.Elements)
-                        yield return new DhcpServerScope(server, scopeAddress.AsNetworkToIpAddress());
+                    if (preloadFailoverRelationships && failoverRelationships?.Count > 0)
+                    {
+                        foreach (var scopeAddress in enumInfo.Elements)
+                        {
+                            var address = scopeAddress.AsNetworkToIpAddress();
+                            failoverRelationships.TryGetValue(address, out var failoverRelationship);
+
+                            scopes.Add(new DhcpServerScope(server, address, failoverRelationship));
+                        }
+                    }
+                    else
+                    {
+                        foreach (var scopeAddress in enumInfo.Elements)
+                            scopes.Add(new DhcpServerScope(server, scopeAddress.AsNetworkToIpAddress()));
+                    }
                 }
             }
             finally
             {
                 Api.FreePointer(enumInfoPtr);
             }
+
+            if (preloadClients)
+            {
+                var scopeLookup = scopes.ToDictionary(s => s.Address);
+                foreach (var clientGroup in DhcpServerClient.GetClients(server, scopeLookup).GroupBy(c => c.Scope))
+                {
+                    var scopeClients = (DhcpServerScopeClientCollection)clientGroup.Key.Clients;
+                    scopeClients.clientCache = clientGroup.ToList();
+                }
+            }
+
+            return scopes;
         }
 
         internal static DhcpServerScope GetScope(DhcpServer server, DhcpServerIpAddress address)
@@ -485,10 +592,10 @@ namespace Dhcp
                                                     ElementsRead: out var elementsRead,
                                                     ElementsTotal: out _);
 
-            if (result == DhcpErrors.ERROR_NO_MORE_ITEMS)
+            if (result == DhcpServerNativeErrors.ERROR_NO_MORE_ITEMS)
                 yield break;
 
-            if (result != DhcpErrors.SUCCESS && result != DhcpErrors.ERROR_MORE_DATA)
+            if (result != DhcpServerNativeErrors.SUCCESS && result != DhcpServerNativeErrors.ERROR_MORE_DATA)
                 throw new DhcpServerException(nameof(Api.DhcpEnumSubnetElements), result);
 
             try
@@ -520,10 +627,10 @@ namespace Dhcp
                                                       ElementsRead: out var elementsRead,
                                                       ElementsTotal: out _);
 
-            if (result == DhcpErrors.ERROR_NO_MORE_ITEMS)
+            if (result == DhcpServerNativeErrors.ERROR_NO_MORE_ITEMS)
                 yield break;
 
-            if (result != DhcpErrors.SUCCESS && result != DhcpErrors.ERROR_MORE_DATA)
+            if (result != DhcpServerNativeErrors.SUCCESS && result != DhcpServerNativeErrors.ERROR_MORE_DATA)
                 throw new DhcpServerException(nameof(Api.DhcpEnumSubnetElementsV5), result);
 
             try
@@ -606,7 +713,7 @@ namespace Dhcp
         {
             var result = Api.DhcpAddSubnetElementV5(server.Address, address.ToNativeAsNetwork(), in element);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpAddSubnetElementV5), result);
         }
 
@@ -614,7 +721,7 @@ namespace Dhcp
         {
             var result = Api.DhcpAddSubnetElement(server.Address, address.ToNativeAsNetwork(), in element);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpAddSubnetElement), result);
         }
 
@@ -641,7 +748,7 @@ namespace Dhcp
         {
             var result = Api.DhcpRemoveSubnetElement(server.Address, address.ToNativeAsNetwork(), in element, DHCP_FORCE_FLAG.DhcpFullForce);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpRemoveSubnetElement), result);
         }
 
@@ -651,7 +758,7 @@ namespace Dhcp
                                                      SubnetAddress: address.ToNativeAsNetwork(),
                                                      TimeDelayInMilliseconds: out var timeDelay);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpGetSubnetDelayOffer), result);
 
             return TimeSpan.FromMilliseconds(timeDelay);
@@ -670,7 +777,7 @@ namespace Dhcp
                                                      SubnetAddress: address.ToNativeAsNetwork(),
                                                      TimeDelayInMilliseconds: timeDelayOfferMilliseconds);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpGetSubnetDelayOffer), result);
         }
 
@@ -686,7 +793,7 @@ namespace Dhcp
                 else
                     return TimeSpan.FromSeconds(optionValue);
             }
-            catch (DhcpServerException ex) when (ex.ApiErrorId == (uint)DhcpErrors.ERROR_FILE_NOT_FOUND)
+            catch (DhcpServerException ex) when (ex.ApiErrorNative == DhcpServerNativeErrors.ERROR_FILE_NOT_FOUND)
             {
                 return null;
             }
@@ -719,7 +826,7 @@ namespace Dhcp
                                                SubnetAddress: address.ToNativeAsNetwork(),
                                                SubnetInfo: out var subnetInfoPtr);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpGetSubnetInfo), result);
 
             try
@@ -739,7 +846,7 @@ namespace Dhcp
                                                  SubnetAddress: address.ToNativeAsNetwork(),
                                                  SubnetInfo: out var subnetInfoPtr);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpGetSubnetInfoVQ), result);
 
             try
@@ -771,7 +878,7 @@ namespace Dhcp
                                                SubnetAddress: Address.ToNativeAsNetwork(),
                                                SubnetInfo: in infoNative);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpSetSubnetInfo), result);
         }
 
@@ -782,7 +889,7 @@ namespace Dhcp
                                                  SubnetAddress: Address.ToNativeAsNetwork(),
                                                  SubnetInfo: in infoNative);
 
-            if (result != DhcpErrors.SUCCESS)
+            if (result != DhcpServerNativeErrors.SUCCESS)
                 throw new DhcpServerException(nameof(Api.DhcpSetSubnetInfoVQ), result);
         }
 

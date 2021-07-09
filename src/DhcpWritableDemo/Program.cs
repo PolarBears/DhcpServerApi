@@ -81,6 +81,9 @@ namespace DhcpWritableDemo
             var clientReservation = client.ConvertToReservation();
             Console.WriteLine($"Client Reservation: {clientReservation}");
 
+            // change reservation hardware address (this effectively changes the Client hardware address)
+            clientReservation.HardwareAddress = "ABBCCDDEEFFA";
+
             // set different dns name server option for reservation
             var reservationOption6Value = option6.CreateOptionIpAddressValue("192.168.128.11", "192.168.128.12");
             clientReservation.Options.AddOrSetOptionValue(reservationOption6Value);
@@ -146,7 +149,7 @@ namespace DhcpWritableDemo
             var loadBalancedRelationship = scope.ConfigureFailover(partnerServer, "A Shared Secret", DhcpServerFailoverMode.LoadBalance);
 
             // retrieve scope failover relationship
-            var scopeRelationship = scope.GetFailoverRelationship();
+            var scopeRelationship = scope.FailoverRelationship;
 
             // replicate failover
             //  - all supported settings are pushed to the partner server

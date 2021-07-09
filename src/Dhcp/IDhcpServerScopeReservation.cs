@@ -5,11 +5,13 @@
         DhcpServerIpAddress Address { get; }
         DhcpServerClientTypes AllowedClientTypes { get; }
         IDhcpServerClient Client { get; }
-        DhcpServerHardwareAddress HardwareAddress { get; }
+        IDhcpServerDnsSettings DnsSettings { get; }
+        DhcpServerHardwareAddress HardwareAddress { get; set; }
         IDhcpServerScopeReservationOptionValueCollection Options { get; }
         IDhcpServerScope Scope { get; }
         IDhcpServer Server { get; }
 
         void Delete();
+        IDhcpServerDnsSettings ConfigureDnsSettings(IDhcpServerDnsSettings dnsSettings);
     }
 }
