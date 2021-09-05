@@ -218,6 +218,7 @@ namespace Dhcp
                         yield break; // Last results
 
                     Api.FreePointer(clientsPtr);
+                    clientsPtr = IntPtr.Zero;
                     result = Api.DhcpEnumSubnetClients(ServerIpAddress: server.Address,
                                                        SubnetAddress: (DHCP_IP_ADDRESS)0,
                                                        ResumeHandle: ref resultHandle,
@@ -275,6 +276,7 @@ namespace Dhcp
                         yield break; // Last results
 
                     Api.FreePointer(clientsPtr);
+                    clientsPtr = IntPtr.Zero;
                     result = Api.DhcpEnumSubnetClientsVQ(ServerIpAddress: server.Address,
                                                          SubnetAddress: (DHCP_IP_ADDRESS)0,
                                                          ResumeHandle: ref resultHandle,
@@ -335,6 +337,7 @@ namespace Dhcp
                         yield break; // Last results
 
                     Api.FreePointer(clientsPtr);
+                    clientsPtr = IntPtr.Zero;
                     result = Api.DhcpEnumSubnetClients(ServerIpAddress: scope.Server.Address,
                                                        SubnetAddress: scope.Address.ToNativeAsNetwork(),
                                                        ResumeHandle: ref resultHandle,
@@ -385,6 +388,7 @@ namespace Dhcp
                         yield break; // Last results
 
                     Api.FreePointer(clientsPtr);
+                    clientsPtr = IntPtr.Zero;
                     result = Api.DhcpEnumSubnetClientsVQ(ServerIpAddress: scope.Server.Address,
                                                          SubnetAddress: scope.Address.ToNativeAsNetwork(),
                                                          ResumeHandle: ref resultHandle,
