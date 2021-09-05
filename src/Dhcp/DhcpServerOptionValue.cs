@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
@@ -10,6 +11,7 @@ namespace Dhcp
         /// <summary>
         /// The associated DHCP Server
         /// </summary>
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerOptionValue.Server => Server;
         public int OptionId { get; }

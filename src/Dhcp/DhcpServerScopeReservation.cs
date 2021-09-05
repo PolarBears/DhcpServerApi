@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
@@ -9,9 +10,10 @@ namespace Dhcp
         private readonly DhcpServerHardwareAddress hardwareAddress;
         private DhcpServerClient client;
         private DhcpServerDnsSettings dnsSettings;
-
+        [JsonIgnore]
         public DhcpServer Server => Scope.Server;
         IDhcpServer IDhcpServerScopeReservation.Server => Server;
+        [JsonIgnore]
         public DhcpServerScope Scope { get; }
         IDhcpServerScope IDhcpServerScopeReservation.Scope => Scope;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
@@ -14,6 +15,7 @@ namespace Dhcp
         /// <summary>
         /// The associated DHCP Server
         /// </summary>
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerClass.Server => Server;
 

@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerScopeClientCollection : IDhcpServerScopeClientCollection
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerScopeClientCollection.Server => Server;
+        [JsonIgnore]
         public DhcpServerScope Scope { get; }
         IDhcpServerScope IDhcpServerScopeClientCollection.Scope => Scope;
         internal List<DhcpServerClient> clientCache = null;

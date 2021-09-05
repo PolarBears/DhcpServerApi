@@ -1,12 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerScopeExcludedIpRangeCollection : IDhcpServerScopeExcludedIpRangeCollection
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerScopeExcludedIpRangeCollection.Server => Server;
+        [JsonIgnore]
         public DhcpServerScope Scope { get; }
         IDhcpServerScope IDhcpServerScopeExcludedIpRangeCollection.Scope => Scope;
 

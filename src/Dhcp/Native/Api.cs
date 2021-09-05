@@ -715,7 +715,10 @@ namespace Dhcp.Native
         public static void FreePointer(IntPtr Pointer)
         {
             if (Pointer != IntPtr.Zero)
+            {
                 DhcpRpcFreeMemory(Pointer);
+                Pointer = IntPtr.Zero;
+            }
         }
     }
 }

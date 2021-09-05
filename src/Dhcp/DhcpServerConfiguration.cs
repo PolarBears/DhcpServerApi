@@ -1,10 +1,12 @@
 ﻿using System;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerConfiguration : IDhcpServerConfiguration
     {
+        [JsonIgnore]
         public IDhcpServer Server { get; }
 
         /// <summary>
