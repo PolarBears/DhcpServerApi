@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerFailoverRelationship : IDhcpServerFailoverRelationship
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerFailoverRelationship.Server => Server;
 

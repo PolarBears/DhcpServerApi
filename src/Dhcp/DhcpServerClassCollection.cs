@@ -1,10 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerClassCollection : IDhcpServerClassCollection
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerClassCollection.Server => Server;
 

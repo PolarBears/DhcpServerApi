@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerClient : IDhcpServerClient
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerClient.Server => Server;
+        [JsonIgnore]
         public DhcpServerScope Scope { get; }
         IDhcpServerScope IDhcpServerClient.Scope => Scope;
 

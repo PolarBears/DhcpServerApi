@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {

@@ -1,12 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
     public class DhcpServerScopeReservationOptionValueCollection : IDhcpServerScopeReservationOptionValueCollection
     {
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerScopeReservationOptionValueCollection.Server => Server;
+        [JsonIgnore]
         public DhcpServerScope Scope { get; }
         IDhcpServerScope IDhcpServerScopeReservationOptionValueCollection.Scope => Scope;
         public DhcpServerScopeReservation Reservation { get; }

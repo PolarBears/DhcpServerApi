@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
@@ -22,6 +23,7 @@ namespace Dhcp
         /// </summary>
         public static TimeSpan DefaultLeaseDuration => TimeSpan.FromDays(8);
 
+        [JsonIgnore]
         public DhcpServer Server { get; }
         IDhcpServer IDhcpServerScope.Server => Server;
         public DhcpServerIpAddress Address { get; }
@@ -95,6 +97,7 @@ namespace Dhcp
         /// <summary>
         /// Scope Clients
         /// </summary>
+        [JsonIgnore]
         public IDhcpServerScopeClientCollection Clients { get; }
 
         private DhcpServerScope(DhcpServer server, DhcpServerIpAddress address)
