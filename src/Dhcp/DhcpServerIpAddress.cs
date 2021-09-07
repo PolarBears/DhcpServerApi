@@ -45,7 +45,7 @@ namespace Dhcp
         /// IP Address in network order
         /// </summary>
         public uint Native => address;
-
+        public string String => this.ToString();
         public byte[] GetBytes()
         {
             var buffer = new byte[4];

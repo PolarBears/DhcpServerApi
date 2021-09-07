@@ -717,7 +717,6 @@ namespace Dhcp.Native
             if (Pointer != IntPtr.Zero)
             {
                 DhcpRpcFreeMemory(Pointer);
-                Pointer = IntPtr.Zero;
             }
         }
     }
