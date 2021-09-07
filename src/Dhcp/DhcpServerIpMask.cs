@@ -27,7 +27,7 @@ namespace Dhcp
         /// IP Mask in network order
         /// </summary>
         public uint Native => mask;
-
+        public string String => this.ToString();
         public static DhcpServerIpMask Empty => new DhcpServerIpMask(0);
         public static DhcpServerIpMask FromNative(uint nativeMask)
             => new DhcpServerIpMask(nativeMask);

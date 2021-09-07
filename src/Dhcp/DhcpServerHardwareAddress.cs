@@ -1,5 +1,6 @@
 ﻿using System;
 using Dhcp.Native;
+using Newtonsoft.Json;
 
 namespace Dhcp
 {
@@ -14,10 +15,12 @@ namespace Dhcp
         private readonly ulong hwAddr1;
         private readonly ulong hwAddr2;
 #pragma warning restore IDE0032 // Use auto property
+        public string String => this.ToString();
 
         /// <summary>
         /// Type of hardware address (see RFC 1700 Assigned Numbers - Number Hardware Type (hrd))
         /// </summary>
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerHardwareType Type => hwAddrType;
 
         /// <summary>

@@ -12,6 +12,7 @@ namespace Dhcp
         /// <summary>
         /// Specifies a set of bit flags that contain the RPC protocols supported by the DHCP server.
         /// </summary>
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerApiProtocol ApiProtocolSupport { get; }
 
         /// <summary>

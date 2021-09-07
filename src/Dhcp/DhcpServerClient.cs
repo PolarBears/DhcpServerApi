@@ -44,12 +44,17 @@ namespace Dhcp
         public bool LeaseExpired => DateTime.UtcNow > Info.LeaseExpiresUtc;
         public bool LeaseHasExpiry => Info.LeaseExpiresUtc != DateTime.MaxValue;
 
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerClientTypes Type => Info.Type;
 
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerClientAddressStates AddressState => Info.AddressState;
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerClientNameProtectionStates NameProtectionState => Info.NameProtectionState;
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerClientDnsStates DnsState => Info.DnsState;
 
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public DhcpServerClientQuarantineStatuses QuarantineStatus => Info.QuarantineStatus;
 
         public DateTime ProbationEnds => Info.ProbationEnds;
