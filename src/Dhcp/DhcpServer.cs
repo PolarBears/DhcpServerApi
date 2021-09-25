@@ -17,6 +17,8 @@ namespace Dhcp
         private DhcpServerAuditLog auditLog;
         private DhcpServerDnsSettings dnsSettings;
         private DhcpServerSpecificStrings specificStrings;
+        private DhcpServerMibInfoV5 ipv4Info;
+        private DhcpServerMibInfoV6 ipv6Info;
 
         public DhcpServerIpAddress Address { get; }
         public string Name { get; }
@@ -31,6 +33,8 @@ namespace Dhcp
         public IDhcpServerAuditLog AuditLog => auditLog ??= DhcpServerAuditLog.GetAuditLog(this);
         public IDhcpServerDnsSettings DnsSettings => (dnsSettings ??= DhcpServerDnsSettings.GetGlobalDnsSettings(this)).Clone();
         public IDhcpServerSpecificStrings SpecificStrings => specificStrings ??= DhcpServerSpecificStrings.GetSpecificStrings(this);
+        public IDhcpServerMibInfoV5 IPV4Info => ipv4Info ??= DhcpServerMibInfoV5.GetIPV4MibInfo(this);
+        public IDhcpServerMibInfoV6 IPV6Info => ipv6Info ??= DhcpServerMibInfoV6.GetIPV6MibInfoo(this);
 
         private DhcpServer(DhcpServerIpAddress address, string name)
         {

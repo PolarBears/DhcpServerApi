@@ -14,6 +14,8 @@
         IDhcpServerOptionCollection Options { get; }
         IDhcpServerScopeCollection Scopes { get; }
         IDhcpServerSpecificStrings SpecificStrings { get; }
+        IDhcpServerMibInfoV5 IPV4Info { get; }
+        IDhcpServerMibInfoV6 IPV6Info { get; }
         DhcpServerVersions Version { get; }
         int VersionMajor { get; }
         int VersionMinor { get; }

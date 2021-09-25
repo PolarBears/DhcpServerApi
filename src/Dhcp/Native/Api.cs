@@ -701,6 +701,29 @@ namespace Dhcp.Native
         [DllImport("dhcpsapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern DhcpServerNativeErrors DhcpV4FailoverTriggerAddrAllocation(string ServerIpAddress, string FailRelName);
 
+
+        /// <summary>
+        /// The DhcpGetMibInfoV5 function obtains a MIB data structure that contains current statistics about the specified DHCP server.
+        /// </summary>
+        /// <param name="ServerIpAddress">
+        ///     Pointer to a zero-delimited string that contains the IPv4 address of the DHCP server for which statistical information is to be retrieved. This value is specified in the format "...".
+        ///     <br></br>
+        ///     If this parameter is NULL, then the local DHCP server process is queried.
+        /// </param>
+        /// <param name="MibInfo">Pointer to the address of a DHCP_MIB_INFO_V5 structure that contains statistical information about the DHCP server specified in the ServerIpAddress parameter.</param>
+        /// <returns>This function returns ERROR_SUCCESS upon a successful call. Otherwise, it returns one of the DHCP Server Management API Error Codes.</returns>
+        [DllImport("dhcpsapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern DhcpServerNativeErrors DhcpGetMibInfoV5(string ServerIpAddress, out IntPtr MibInfo);
+
+        /// <summary>
+        /// The DhcpGetMibInfoV6 function retrieves the IPv6 counter values of the DHCP server.
+        /// </summary>
+        /// <param name="ServerIpAddress">Pointer to a Unicode string that specifies the IP address or hostname of the DHCPv6 server.</param>
+        /// <param name="MibInfo">Pointed to a DHCP_MIB_INFO_V6 structure that points to the location containing the IPv6 MIB information about the DHCP server.</param>
+        /// <returns>This function returns ERROR_SUCCESS upon a successful call. Otherwise, it returns one of the DHCP Server Management API Error Codes.</returns>
+        [DllImport("dhcpsapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern DhcpServerNativeErrors DhcpGetMibInfoV6(string ServerIpAddress, out IntPtr MibInfo);
+
         /// <summary>
         /// The DhcpRpcFreeMemory function frees a block of buffer space returned as a parameter.
         /// </summary>

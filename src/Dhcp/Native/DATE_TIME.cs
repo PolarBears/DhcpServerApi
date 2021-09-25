@@ -6,15 +6,16 @@ namespace Dhcp.Native
     /// <summary>
     /// The DATE_TIME structure defines a 64-bit integer value that contains a date/time, expressed as the number of ticks (100-nanosecond increments) since 12:00 midnight, January 1, 1 C.E. in the Gregorian calendar. 
     /// </summary>
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal readonly struct DATE_TIME
     {
-        [FieldOffset(0)]
-        public readonly long dwDateTime;
-
+        public readonly uint dwLowDateTime;
+        public readonly uint dwHighDateTime;
+        public readonly long dwDateTime => (((long)dwHighDateTime) << 32) | (uint)this.dwLowDateTime;
         private DATE_TIME(long fileTimeUtc)
         {
-            dwDateTime = fileTimeUtc;
+            dwLowDateTime = (uint)(fileTimeUtc & 0xFFFFFFFF);
+            dwHighDateTime = (uint)((fileTimeUtc & 0x7FFFFFFF00000000) >> 32);
         }
 
         private DateTime ToDateTime()
